@@ -6,6 +6,7 @@ package cmdutils
 
 import (
 	"archive/tar"
+	"bufio"
 	"compress/gzip"
 	"fmt"
 	"io"
@@ -48,20 +49,17 @@ func (tr *Tar) validRelPath(p string) bool {
 	return true
 }
 
-func (tr *Tar) unpackTo(p string) (string, error) {
-	if !tr.validRelPath(p) {
-		return "", fmt.Errorf("tar file contained invalid name %q", p)
-	}
+func (tr *Tar) unpackTo(p string) string {
 	if tr.StripComponents == 0 {
-		return p, nil
+		return p
 	}
 	sc := int(tr.StripComponents)
 	ps := strings.Split(filepath.Clean(p), string(filepath.Separator))
-	if len(ps) <= sc {
-		return "", fmt.Errorf("invalid StripComponents=%d for filepath %q", sc, p)
+	if len(ps) < sc {
+		return ""
 	}
 
-	return filepath.Join(ps[sc:]...), nil
+	return filepath.Join(ps[sc:]...)
 }
 
 func (tr *Tar) unCompress(rd io.Reader, name string) (io.Reader, error) {
@@ -107,7 +105,7 @@ func (tr *Tar) Unpack(archiveFile string, targetDir string) error {
 
 		if tr.UnpackNextBefore != nil {
 			if skip, err4 := tr.UnpackNextBefore(th); skip {
-				return nil
+				continue
 			} else if err4 != nil {
 				return err4
 			}
@@ -139,10 +137,10 @@ func (tr *Tar) checkMinMaxIgnore(th *tar.Header) bool {
 	return false
 }
 
-func (tr *Tar) unpackOne(trd *tar.Reader, th *tar.Header, targetDir string, madeDir map[string]bool) (ret error) {
-	to, err3 := tr.unpackTo(th.Name)
-	if err3 != nil {
-		return err3
+func (tr *Tar) unpackOne(trd *tar.Reader, th *tar.Header, targetDir string, madeDir map[string]bool) error {
+	to := tr.unpackTo(th.Name)
+	if len(to) == 0 {
+		return nil
 	}
 
 	if tr.checkMinMaxIgnore(th) {
@@ -170,15 +168,10 @@ func (tr *Tar) unpackOne(trd *tar.Reader, th *tar.Header, targetDir string, made
 		if err != nil {
 			return err
 		}
-		n, err := io.Copy(wf, trd)
-		if closeErr := wf.Close(); closeErr != nil && err == nil {
-			err = closeErr
-		}
-		if err != nil {
-			return fmt.Errorf("error writing to %s: %v", abs, err)
-		}
-		if n != th.Size {
-			return fmt.Errorf("only wrote %d bytes to %s; expected %d", n, abs, th.Size)
+		defer wf.Close()
+
+		if err = copyFile(trd, wf, th.Size); err != nil {
+			return fmt.Errorf("error writing to %s: %w", abs, err)
 		}
 		if !th.ModTime.IsZero() {
 			if err := os.Chtimes(abs, th.ModTime, th.ModTime); err != nil {
@@ -194,4 +187,16 @@ func (tr *Tar) unpackOne(trd *tar.Reader, th *tar.Header, targetDir string, made
 		return fmt.Errorf("tar file entry %s contained unsupported file type %v", th.Name, mode)
 	}
 	return nil
+}
+
+func copyFile(from io.Reader, to io.Writer, want int64) error {
+	bw := bufio.NewWriter(to)
+	read, err := bw.ReadFrom(from)
+	if err != nil {
+		return err
+	}
+	if want > 0 && read != want {
+		return fmt.Errorf("wrote %d bytes, want %d", read, want)
+	}
+	return bw.Flush()
 }
