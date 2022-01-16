@@ -89,14 +89,6 @@ func (tr *Zip) checkMinMaxIgnore(f *zip.File) bool {
 	return false
 }
 
-func (tr *Zip) mkdir(dir string) error {
-	err := os.MkdirAll(dir, 0755)
-	if err != nil && os.IsExist(err) {
-		return nil
-	}
-	return err
-}
-
 func (tr *Zip) unpackOne(f *zip.File, targetDir string) error {
 	to := tr.unpackTo(f.Name)
 	// 若是文件名为空，则此文件忽略掉
@@ -107,7 +99,7 @@ func (tr *Zip) unpackOne(f *zip.File, targetDir string) error {
 	outPath := filepath.Join(targetDir, to)
 
 	if f.FileInfo().IsDir() {
-		return tr.mkdir(outPath)
+		return mkdir(outPath)
 	}
 
 	rc, err2 := f.Open()
@@ -116,7 +108,7 @@ func (tr *Zip) unpackOne(f *zip.File, targetDir string) error {
 	}
 	defer rc.Close()
 
-	if err3 := tr.mkdir(filepath.Dir(outPath)); err3 != nil {
+	if err3 := mkdir(filepath.Dir(outPath)); err3 != nil {
 		return err3
 	}
 

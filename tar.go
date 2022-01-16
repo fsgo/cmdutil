@@ -159,7 +159,7 @@ func (tr *Tar) unpackOne(trd *tar.Reader, th *tar.Header, targetDir string, made
 		// write will fail with the same error.
 		dir := filepath.Dir(abs)
 		if !madeDir[dir] {
-			if err := os.MkdirAll(filepath.Dir(abs), 0755); err != nil {
+			if err := mkdir(filepath.Dir(abs)); err != nil {
 				return err
 			}
 			madeDir[dir] = true
@@ -179,7 +179,7 @@ func (tr *Tar) unpackOne(trd *tar.Reader, th *tar.Header, targetDir string, made
 			}
 		}
 	case mode.IsDir():
-		if err := os.MkdirAll(abs, 0755); err != nil {
+		if err := mkdir(abs); err != nil {
 			return err
 		}
 		madeDir[abs] = true
