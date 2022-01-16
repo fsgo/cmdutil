@@ -32,11 +32,11 @@ type Zip struct {
 	UnpackNextAfter func(f *zip.File, err error) error
 }
 
-func (tr *Zip) unpackTo(p string) string {
-	if tr.StripComponents == 0 {
+func (zp *Zip) unpackTo(p string) string {
+	if zp.StripComponents == 0 {
 		return p
 	}
-	sc := int(tr.StripComponents)
+	sc := int(zp.StripComponents)
 	ps := strings.Split(filepath.Clean(p), string(filepath.Separator))
 	if len(ps) < sc {
 		return ""
@@ -46,51 +46,54 @@ func (tr *Zip) unpackTo(p string) string {
 }
 
 // Unpack 解压缩文件到指定目录
-func (tr *Zip) Unpack(archiveFile string, targetDir string) error {
+func (zp *Zip) Unpack(archiveFile string, targetDir string) error {
 	zr, err := zip.OpenReader(archiveFile)
 	if err != nil {
 		return err
 	}
 	defer zr.Close()
+	return zp.UnpackWithReader(&zr.Reader, targetDir)
+}
 
-	for _, f := range zr.File {
-		if tr.UnpackNextBefore != nil {
-			if skip, err4 := tr.UnpackNextBefore(f); skip {
+func (zp *Zip) UnpackWithReader(zrd *zip.Reader, targetDir string) error {
+	for _, f := range zrd.File {
+		if zp.UnpackNextBefore != nil {
+			if skip, err4 := zp.UnpackNextBefore(f); skip {
 				continue
 			} else if err4 != nil {
 				return err4
 			}
 		}
 
-		err3 := tr.unpackOne(f, targetDir)
+		err3 := zp.unpackOne(f, targetDir)
 
-		if tr.UnpackNextAfter != nil {
-			err3 = tr.UnpackNextAfter(f, err3)
+		if zp.UnpackNextAfter != nil {
+			err3 = zp.UnpackNextAfter(f, err3)
 		}
 
-		if err3 != nil && !tr.IgnoreFailed {
+		if err3 != nil && !zp.IgnoreFailed {
 			return err3
 		}
 	}
 	return nil
 }
 
-func (tr *Zip) checkMinMaxIgnore(f *zip.File) bool {
+func (zp *Zip) checkMinMaxIgnore(f *zip.File) bool {
 	if !f.FileInfo().Mode().IsRegular() {
 		return false
 	}
 	size := f.FileInfo().Size()
-	if tr.MinSize > 0 && size < tr.MinSize {
+	if zp.MinSize > 0 && size < zp.MinSize {
 		return true
 	}
-	if tr.MaxSize > 0 && size > tr.MaxSize {
+	if zp.MaxSize > 0 && size > zp.MaxSize {
 		return true
 	}
 	return false
 }
 
-func (tr *Zip) unpackOne(f *zip.File, targetDir string) error {
-	to := tr.unpackTo(f.Name)
+func (zp *Zip) unpackOne(f *zip.File, targetDir string) error {
+	to := zp.unpackTo(f.Name)
 	// 若是文件名为空，则此文件忽略掉
 	if len(to) == 0 {
 		return nil

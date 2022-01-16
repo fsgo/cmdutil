@@ -6,3 +6,7 @@ package cmdutils
 
 type CP struct {
 }
+
+func (cp *CP) Copy(dst string, srcs ...string) error {
+	return nil
+}

@@ -90,10 +90,13 @@ func (tr *Tar) Unpack(archiveFile string, targetDir string) error {
 	if rc, ok := zr.(io.Closer); ok {
 		defer rc.Close()
 	}
+	trd := tar.NewReader(zr)
+	return tr.UnpackWithReader(trd, targetDir)
+}
 
+func (tr *Tar) UnpackWithReader(trd *tar.Reader, targetDir string) error {
 	madeDir := map[string]bool{}
 
-	trd := tar.NewReader(zr)
 	for {
 		th, err2 := trd.Next()
 		if err2 == io.EOF {
