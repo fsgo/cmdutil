@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -17,6 +18,14 @@ import (
 type Wget struct {
 	PrintProgress io.Writer
 	Timeout       time.Duration
+	Proxy         func(*http.Request) (*url.URL, error)
+}
+
+func (w *Wget) getProxy() func(*http.Request) (*url.URL, error) {
+	if w.Proxy != nil {
+		return w.Proxy
+	}
+	return http.ProxyFromEnvironment
 }
 
 func (w *Wget) Download(src string, dst string) error {
@@ -44,7 +53,7 @@ func (w *Wget) Download(src string, dst string) error {
 		Transport: &http.Transport{
 			DisableCompression: true,
 			DisableKeepAlives:  true,
-			Proxy:              http.ProxyFromEnvironment,
+			Proxy:              w.getProxy(),
 		},
 		Timeout: w.Timeout,
 	}
