@@ -13,7 +13,7 @@ import (
 
 func main() {
 	w := &cmdutils.Wget{
-		PrintProgress: os.Stderr,
+		LogWriter: os.Stderr,
 	}
 	u := "https://go.dev/dl/go1.17.6.darwin-amd64.tar.gz"
 	u = "http://127.0.0.1:8088/chunk?repeat=10"

@@ -52,10 +52,10 @@ func (zp *Zip) Unpack(archiveFile string, targetDir string) error {
 		return err
 	}
 	defer zr.Close()
-	return zp.UnpackWithReader(&zr.Reader, targetDir)
+	return zp.UnpackFromReader(&zr.Reader, targetDir)
 }
 
-func (zp *Zip) UnpackWithReader(zrd *zip.Reader, targetDir string) error {
+func (zp *Zip) UnpackFromReader(zrd *zip.Reader, targetDir string) error {
 	for _, f := range zrd.File {
 		if zp.UnpackNextBefore != nil {
 			if skip, err4 := zp.UnpackNextBefore(f); skip {

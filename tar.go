@@ -91,10 +91,10 @@ func (tr *Tar) Unpack(archiveFile string, targetDir string) error {
 		defer rc.Close()
 	}
 	trd := tar.NewReader(zr)
-	return tr.UnpackWithReader(trd, targetDir)
+	return tr.UnpackFromReader(trd, targetDir)
 }
 
-func (tr *Tar) UnpackWithReader(trd *tar.Reader, targetDir string) error {
+func (tr *Tar) UnpackFromReader(trd *tar.Reader, targetDir string) error {
 	madeDir := map[string]bool{}
 
 	for {

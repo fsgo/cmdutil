@@ -5,20 +5,30 @@
 package cmdutils
 
 import (
+	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 type Wget struct {
-	PrintProgress io.Writer
-	Timeout       time.Duration
-	Proxy         func(*http.Request) (*url.URL, error)
+	LogWriter io.Writer
+
+	// Timeout 整体超时
+	Timeout time.Duration
+
+	// ConnectTimeout 连接超时
+	ConnectTimeout time.Duration
+
+	Proxy func(*http.Request) (*url.URL, error)
 }
 
 func (w *Wget) getProxy() func(*http.Request) (*url.URL, error) {
@@ -26,6 +36,50 @@ func (w *Wget) getProxy() func(*http.Request) (*url.URL, error) {
 		return w.Proxy
 	}
 	return http.ProxyFromEnvironment
+}
+
+func (w *Wget) logit(msgs ...interface{}) {
+	if w.LogWriter == nil {
+		return
+	}
+	var b strings.Builder
+	for _, m := range msgs {
+		b.WriteString(fmt.Sprint(m))
+		b.WriteString(" ")
+	}
+	b.WriteString("\n")
+	fmt.Fprint(w.LogWriter, b.String())
+}
+
+func (w *Wget) getClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			DisableCompression: true,
+			DisableKeepAlives:  true,
+			Proxy:              w.getProxy(),
+			DialContext:        w.dialContext,
+		},
+		Timeout: w.Timeout,
+	}
+}
+
+func (w *Wget) dialContext(ctx context.Context, network, addr string) (c net.Conn, err error) {
+	if w.ConnectTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, w.ConnectTimeout)
+		defer cancel()
+	}
+	start := time.Now()
+	w.logit("connect start", network, addr)
+	defer func() {
+		cost := time.Since(start)
+		if err == nil {
+			w.logit("connect success", network, addr, "cost=", cost.String())
+		} else {
+			w.logit("connect failed", network, addr, "cost=", cost.String(), err)
+		}
+	}()
+	return (&net.Dialer{}).DialContext(ctx, network, addr)
 }
 
 func (w *Wget) Download(src string, dst string) error {
@@ -41,7 +95,6 @@ func (w *Wget) Download(src string, dst string) error {
 	if err != nil {
 		return err
 	}
-
 	defer func() {
 		if err != nil {
 			dstFile.Close()
@@ -49,20 +102,23 @@ func (w *Wget) Download(src string, dst string) error {
 		}
 	}()
 
-	client := &http.Client{
-		Transport: &http.Transport{
-			DisableCompression: true,
-			DisableKeepAlives:  true,
-			Proxy:              w.getProxy(),
-		},
-		Timeout: w.Timeout,
+	bw := bufio.NewWriter(dstFile)
+	defer bw.Flush()
+
+	if err = w.DownloadToWriter(src, bw); err != nil {
+		return err
 	}
+
+	return dstFile.Close()
+}
+
+func (w *Wget) DownloadToWriter(src string, dst io.Writer) error {
+	client := w.getClient()
 
 	res, err := client.Get(src)
 	if err != nil {
 		return err
 	}
-
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("invalid status code: %s", res.Status)
@@ -70,15 +126,15 @@ func (w *Wget) Download(src string, dst string) error {
 
 	var pw *progressWriter
 	var ww io.Writer
-	if w.PrintProgress != nil {
+	if w.LogWriter != nil {
 		pw = &progressWriter{
-			w:     dstFile,
-			po:    w.PrintProgress,
+			w:     dst,
+			po:    w.LogWriter,
 			total: res.ContentLength,
 		}
 		ww = pw
 	} else {
-		ww = dstFile
+		ww = dst
 	}
 	n, err := io.Copy(ww, res.Body)
 	if err != nil {
@@ -91,7 +147,7 @@ func (w *Wget) Download(src string, dst string) error {
 	if pw != nil {
 		pw.finish()
 	}
-	return dstFile.Close()
+	return nil
 }
 
 type progressWriter struct {
