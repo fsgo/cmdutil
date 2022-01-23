@@ -7,6 +7,7 @@ package cmdutils
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -27,6 +28,8 @@ type Wget struct {
 
 	// ConnectTimeout 连接超时
 	ConnectTimeout time.Duration
+
+	InsecureSkipVerify bool
 
 	Proxy func(*http.Request) (*url.URL, error)
 }
@@ -52,14 +55,20 @@ func (w *Wget) logit(msgs ...interface{}) {
 }
 
 func (w *Wget) getClient() *http.Client {
+	tr := &http.Transport{
+		DisableCompression: true,
+		DisableKeepAlives:  true,
+		Proxy:              w.getProxy(),
+		DialContext:        w.dialContext,
+	}
+	if w.InsecureSkipVerify {
+		tr.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true, // 不校验 server 的证书的有效性
+		}
+	}
 	return &http.Client{
-		Transport: &http.Transport{
-			DisableCompression: true,
-			DisableKeepAlives:  true,
-			Proxy:              w.getProxy(),
-			DialContext:        w.dialContext,
-		},
-		Timeout: w.Timeout,
+		Transport: tr,
+		Timeout:   w.Timeout,
 	}
 }
 
