@@ -4,6 +4,7 @@
 
 package cmdutils
 
+// CP todo
 type CP struct {
 }
 

@@ -23,6 +23,8 @@ import (
 type Wget struct {
 	LogWriter io.Writer
 
+	Proxy func(*http.Request) (*url.URL, error)
+
 	// Timeout 整体超时
 	Timeout time.Duration
 
@@ -30,8 +32,6 @@ type Wget struct {
 	ConnectTimeout time.Duration
 
 	InsecureSkipVerify bool
-
-	Proxy func(*http.Request) (*url.URL, error)
 }
 
 func (w *Wget) getProxy() func(*http.Request) (*url.URL, error) {
@@ -160,11 +160,11 @@ func (w *Wget) DownloadToWriter(src string, dst io.Writer) error {
 }
 
 type progressWriter struct {
+	last     time.Time
 	w        io.Writer
+	po       io.Writer
 	n        int64
 	total    int64
-	last     time.Time
-	po       io.Writer
 	finished bool
 }
 

@@ -17,19 +17,6 @@ import (
 
 // Tar tape archive 工具，目前已经具备压缩文件
 type Tar struct {
-	// StripComponents Unpack 的时候，忽略掉前 N 层目录
-	StripComponents uint
-
-	// IgnoreFailed 是否忽略异常
-	// 不会忽略 UnpackNextBefore 返回的 error
-	IgnoreFailed bool
-
-	// MinSize 最小文件大小，>0 时有效
-	MinSize int64
-
-	// MaxSize 最小文件大小，>0 时有效
-	MaxSize int64
-
 	// UnpackNextBefore 在 Unpack 时，解析到下一个 Header 后，实际 unpack 前的回调
 	UnpackNextBefore func(h *tar.Header) (skip bool, err error)
 
@@ -40,6 +27,18 @@ type Tar struct {
 	// 默认为按照文件后缀自动选择：
 	// 1.后缀为 .gz 和 .tgz 时选择 gzip
 	UnCompress func(rd io.Reader) (io.Reader, error)
+	// StripComponents Unpack 的时候，忽略掉前 N 层目录
+	StripComponents uint
+
+	// MinSize 最小文件大小，>0 时有效
+	MinSize int64
+
+	// MaxSize 最小文件大小，>0 时有效
+	MaxSize int64
+
+	// IgnoreFailed 是否忽略异常
+	// 不会忽略 UnpackNextBefore 返回的 error
+	IgnoreFailed bool
 }
 
 func (tr *Tar) validRelPath(p string) bool {

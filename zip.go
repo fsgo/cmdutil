@@ -12,12 +12,13 @@ import (
 )
 
 type Zip struct {
+	// UnpackNextBefore 在 Unpack 时，解析到下一个 Header 后，实际 unpack 前的回调
+	UnpackNextBefore func(f *zip.File) (skip bool, err error)
+
+	// UnpackNextAfter 在 Unpack 时，解析到下一个 Header 后，实际 unpack 后的回调
+	UnpackNextAfter func(f *zip.File, err error) error
 	// StripComponents Unpack 的时候，忽略掉前 N 层目录
 	StripComponents uint
-
-	// IgnoreFailed 是否忽略异常
-	// 不会忽略 UnpackNextBefore 返回的 error
-	IgnoreFailed bool
 
 	// MinSize 最小文件大小，>0 时有效
 	MinSize int64
@@ -25,11 +26,9 @@ type Zip struct {
 	// MaxSize 最小文件大小，>0 时有效
 	MaxSize int64
 
-	// UnpackNextBefore 在 Unpack 时，解析到下一个 Header 后，实际 unpack 前的回调
-	UnpackNextBefore func(f *zip.File) (skip bool, err error)
-
-	// UnpackNextAfter 在 Unpack 时，解析到下一个 Header 后，实际 unpack 后的回调
-	UnpackNextAfter func(f *zip.File, err error) error
+	// IgnoreFailed 是否忽略异常
+	// 不会忽略 UnpackNextBefore 返回的 error
+	IgnoreFailed bool
 }
 
 func (zp *Zip) unpackTo(p string) string {
