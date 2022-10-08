@@ -17,6 +17,7 @@ type Zip struct {
 
 	// UnpackNextAfter 在 Unpack 时，解析到下一个 Header 后，实际 unpack 后的回调
 	UnpackNextAfter func(f *zip.File, err error) error
+
 	// StripComponents Unpack 的时候，忽略掉前 N 层目录
 	StripComponents uint
 

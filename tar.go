@@ -27,6 +27,7 @@ type Tar struct {
 	// 默认为按照文件后缀自动选择：
 	// 1.后缀为 .gz 和 .tgz 时选择 gzip
 	UnCompress func(rd io.Reader) (io.Reader, error)
+
 	// StripComponents Unpack 的时候，忽略掉前 N 层目录
 	StripComponents uint
 
