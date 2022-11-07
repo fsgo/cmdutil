@@ -43,7 +43,7 @@ type Tar struct {
 }
 
 func (tr *Tar) validRelPath(p string) bool {
-	if p == "" || strings.Contains(p, `\`) || strings.HasPrefix(p, "/") || strings.Contains(p, "../") {
+	if len(p) == 0 || strings.Contains(p, `\`) || strings.HasPrefix(p, "/") || strings.Contains(p, "../") {
 		return false
 	}
 	return true
@@ -104,6 +104,10 @@ func (tr *Tar) UnpackFromReader(trd *tar.Reader, targetDir string) error {
 		}
 		if err2 != nil {
 			return err2
+		}
+
+		if !tr.validRelPath(th.Name) {
+			return fmt.Errorf("tar file contained invalid name %q", th.Name)
 		}
 
 		if tr.UnpackNextBefore != nil {

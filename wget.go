@@ -41,7 +41,7 @@ func (w *Wget) getProxy() func(*http.Request) (*url.URL, error) {
 	return http.ProxyFromEnvironment
 }
 
-func (w *Wget) logit(msgs ...interface{}) {
+func (w *Wget) logit(msgs ...any) {
 	if w.LogWriter == nil {
 		return
 	}
@@ -56,10 +56,10 @@ func (w *Wget) logit(msgs ...interface{}) {
 
 func (w *Wget) getClient() *http.Client {
 	tr := &http.Transport{
-		DisableCompression: true,
-		DisableKeepAlives:  true,
-		Proxy:              w.getProxy(),
-		DialContext:        w.dialContext,
+		// DisableCompression: true,
+		DisableKeepAlives: true,
+		Proxy:             w.getProxy(),
+		DialContext:       w.dialContext,
 	}
 	if w.InsecureSkipVerify {
 		tr.TLSClientConfig = &tls.Config{
@@ -112,9 +112,11 @@ func (w *Wget) Download(src string, dst string) error {
 	}()
 
 	bw := bufio.NewWriter(dstFile)
-	defer bw.Flush()
-
 	if err = w.DownloadToWriter(src, bw); err != nil {
+		return err
+	}
+
+	if err = bw.Flush(); err != nil {
 		return err
 	}
 
@@ -129,6 +131,7 @@ func (w *Wget) DownloadToWriter(src string, dst io.Writer) error {
 		return err
 	}
 	defer res.Body.Close()
+	w.logit("resp.StatusCode", res.StatusCode)
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("invalid status code: %s", res.Status)
 	}

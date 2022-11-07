@@ -57,6 +57,9 @@ func (zp *Zip) Unpack(archiveFile string, targetDir string) error {
 
 func (zp *Zip) UnpackFromReader(zrd *zip.Reader, targetDir string) error {
 	for _, f := range zrd.File {
+		if !zp.checkMinMaxIgnore(f) {
+			continue
+		}
 		if zp.UnpackNextBefore != nil {
 			if skip, err4 := zp.UnpackNextBefore(f); skip {
 				continue
