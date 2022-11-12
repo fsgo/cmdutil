@@ -8,11 +8,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/fsgo/cmdutils"
+	"github.com/fsgo/cmdutil"
 )
 
 func main() {
-	w := &cmdutils.Wget{
+	w := &cmdutil.Wget{
 		LogWriter: os.Stderr,
 	}
 	u := "https://go.dev/dl/go1.17.6.darwin-amd64.tar.gz"

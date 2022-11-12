@@ -17,7 +17,7 @@ import (
 
 	"golang.org/x/mod/semver"
 
-	"github.com/fsgo/cmdutils"
+	"github.com/fsgo/cmdutil"
 )
 
 // SDK 查找当前机器的 Go SDK 情况
@@ -196,7 +196,7 @@ func GoCmdEnv(goBin string, env []string) []string {
 	}
 
 	goBinDir := filepath.Dir(ab)
-	oe := &cmdutils.OSEnv{}
+	oe := &cmdutil.OSEnv{}
 	oe.WithEnviron(env)
 	_ = oe.Insert("PATH", goBinDir)
 

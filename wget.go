@@ -2,7 +2,7 @@
 // Author: fsgo
 // Date: 2022/1/16
 
-package cmdutils
+package cmdutil
 
 import (
 	"bufio"

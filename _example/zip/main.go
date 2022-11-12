@@ -5,23 +5,23 @@
 package main
 
 import (
-	"archive/tar"
+	"archive/zip"
 	"fmt"
 	"log"
 
-	"github.com/fsgo/cmdutils"
+	"github.com/fsgo/cmdutil"
 )
 
 func main() {
-	t := &cmdutils.Tar{
+	t := &cmdutil.Zip{
 		StripComponents: 0,
 		IgnoreFailed:    false,
 		MinSize:         1,
-		UnpackNextBefore: func(h *tar.Header) (skip bool, err error) {
-			log.Println(h.Name, h.Size)
+		UnpackNextBefore: func(f *zip.File) (skip bool, err error) {
+			log.Println(f.Name)
 			return false, nil
 		},
 	}
-	err := t.Unpack("a.tar.gz", "./tmp/")
+	err := t.Unpack("a.zip", "./tmp/")
 	fmt.Println("err:", err)
 }

@@ -1,4 +1,4 @@
-module github.com/fsgo/cmdutils
+module github.com/fsgo/cmdutil
 
 go 1.19
 

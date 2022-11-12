@@ -2,7 +2,7 @@
 // Author: hidu <duv123@gmail.com>
 // Date: 2022/11/12
 
-package cmdutils
+package cmdutil
 
 import (
 	"os"
