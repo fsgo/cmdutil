@@ -94,6 +94,7 @@ func (tr *Tar) Unpack(archiveFile string, targetDir string) error {
 	return tr.UnpackFromReader(trd, targetDir)
 }
 
+// UnpackFromReader 从 tar.Reader 解压数据
 func (tr *Tar) UnpackFromReader(trd *tar.Reader, targetDir string) error {
 	madeDir := map[string]bool{}
 

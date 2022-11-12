@@ -20,6 +20,7 @@ import (
 	"time"
 )
 
+// Wget 提供类似 wget 的功能
 type Wget struct {
 	LogWriter io.Writer
 
@@ -91,6 +92,7 @@ func (w *Wget) dialContext(ctx context.Context, network, addr string) (c net.Con
 	return (&net.Dialer{}).DialContext(ctx, network, addr)
 }
 
+// Download 从 src 这个地址下载到 dst 这个文件
 func (w *Wget) Download(src string, dst string) error {
 	if len(dst) == 0 {
 		return errors.New("empty output path")
@@ -123,6 +125,7 @@ func (w *Wget) Download(src string, dst string) error {
 	return dstFile.Close()
 }
 
+// DownloadToWriter 下载数据并写入指定的 writer
 func (w *Wget) DownloadToWriter(src string, dst io.Writer) error {
 	client := w.getClient()
 

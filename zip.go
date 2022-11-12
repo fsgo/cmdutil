@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+// Zip 解压缩 .zip 文件
 type Zip struct {
 	// UnpackNextBefore 在 Unpack 时，解析到下一个 Header 后，实际 unpack 前的回调
 	UnpackNextBefore func(f *zip.File) (skip bool, err error)
@@ -55,6 +56,7 @@ func (zp *Zip) Unpack(archiveFile string, targetDir string) error {
 	return zp.UnpackFromReader(&zr.Reader, targetDir)
 }
 
+// UnpackFromReader 解压 zip.Reader
 func (zp *Zip) UnpackFromReader(zrd *zip.Reader, targetDir string) error {
 	for _, f := range zrd.File {
 		if !zp.checkMinMaxIgnore(f) {
