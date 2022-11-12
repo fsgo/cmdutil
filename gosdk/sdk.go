@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/mod/semver"
@@ -27,8 +28,8 @@ type SDK struct {
 	once     sync.Once
 }
 
-// List 返回当前机器所有安装的，可用的 'go'的地址
-// 安装版本由高到低排序
+// List 返回当前机器所有安装的，可用的 'go' 的地址
+// 版本由高到低排序
 // 若没有，会返回空
 func (gs *SDK) List() []string {
 	gs.doOnce()
@@ -108,6 +109,16 @@ func (gs *SDK) DefaultOrLatest() string {
 	return "go"
 }
 
+// LatestOrDefault 返回最新版本，或者是 $PATH 里的 go 版本
+// 若没有，也会返回 "go"
+func (gs *SDK) LatestOrDefault() string {
+	l := gs.Latest()
+	if len(l) != 0 {
+		return l
+	}
+	return gs.Default()
+}
+
 // Default 返回 $PATH 里的 Go 的路径
 func (gs *SDK) Default() string {
 	gs.doOnce()
@@ -134,22 +145,44 @@ func (gs *goEnv) Greater(b *goEnv) bool {
 	return semver.Compare(av, bv) >= 0
 }
 
-var defaultSDK = &SDK{}
+var defaultSDK atomic.Pointer[SDK]
+
+func init() {
+	Update()
+}
+
+// Update 更新默认的环境信息
+func Update() {
+	defaultSDK.Store(&SDK{})
+}
 
 // DefaultOrLatest 查找 $PATH 里的 go 或者是最高版本的 go
 // 若没有，也会返回 "go"
 func DefaultOrLatest() string {
-	return defaultSDK.DefaultOrLatest()
+	return defaultSDK.Load().DefaultOrLatest()
+}
+
+// LatestOrDefault 返回最新版本，或者是 $PATH 里的 go 版本
+// 若没有，也会返回 "go"
+func LatestOrDefault() string {
+	return defaultSDK.Load().LatestOrDefault()
 }
 
 // Latest 返回最新版本的 Go 的路径，若不存在，会返回空
 func Latest() string {
-	return defaultSDK.Latest()
+	return defaultSDK.Load().Latest()
 }
 
 // Default 返回 $PATH 里的 Go 的路径
 func Default() string {
-	return defaultSDK.Default()
+	return defaultSDK.Load().Default()
+}
+
+// List 返回当前机器所有安装的，可用的 'go' 的地址
+// 版本由高到低排序
+// 若没有，会返回空
+func List() []string {
+	return defaultSDK.Load().List()
 }
 
 // GoCmdEnv 根据 goBin 路径返回设置了 GOROOT 的环境变量
