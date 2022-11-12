@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"golang.org/x/mod/semver"
+
+	"github.com/fsgo/cmdutils"
 )
 
 // SDK 查找当前机器的 Go SDK 情况
@@ -148,4 +150,29 @@ func Latest() string {
 // Default 返回 $PATH 里的 Go 的路径
 func Default() string {
 	return defaultSDK.Default()
+}
+
+// GoCmdEnv 根据 goBin 路径返回设置了 GOROOT 的环境变量
+func GoCmdEnv(goBin string, env []string) []string {
+	if len(env) == 0 {
+		env = os.Environ()
+	}
+	ab, err := filepath.Abs(goBin)
+	if err != nil {
+		return env
+	}
+
+	goBinDir := filepath.Dir(ab)
+	oe := &cmdutils.OSEnv{}
+	oe.WithEnviron(env)
+	_ = oe.Insert("PATH", goBinDir)
+
+	goRoot := filepath.Dir(goBinDir)
+	name := filepath.Join(goRoot, "api", "go1.txt")
+	info, err := os.Stat(name)
+	if err != nil || info.IsDir() {
+		return env
+	}
+	_ = oe.Set("GOROOT", goRoot)
+	return os.Environ()
 }
