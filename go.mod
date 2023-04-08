@@ -3,8 +3,8 @@ module github.com/fsgo/cmdutil
 go 1.19
 
 require (
-	github.com/stretchr/testify v1.8.1
-	golang.org/x/mod v0.6.0
+	github.com/stretchr/testify v1.8.2
+	golang.org/x/mod v0.10.0
 )
 
 require (

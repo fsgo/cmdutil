@@ -119,13 +119,13 @@ func (gs *SDK) LatestOrDefault() string {
 	return gs.Default()
 }
 
-// Default 返回 $PATH 里的 Go 的路径
+// Default 返回 $PATH 里的 "go" 二进制文件的路径，若不存在，会返回空
 func (gs *SDK) Default() string {
 	gs.doOnce()
 	return gs.inPathGo
 }
 
-// Latest 返回最新版本的 Go 的路径，若不存在，会返回空
+// Latest 返回最新版本的 "go" 的路径，若不存在，会返回空
 func (gs *SDK) Latest() string {
 	gs.doOnce()
 	if len(gs.listEnv) >= 0 {
@@ -156,7 +156,7 @@ func Update() {
 	defaultSDK.Store(&SDK{})
 }
 
-// DefaultOrLatest 查找 $PATH 里的 go 或者是最高版本的 go
+// DefaultOrLatest 查找 $PATH 里的 "go" 二进制文件的路径 或者是最高版本的 go
 // 若没有，也会返回 "go"
 func DefaultOrLatest() string {
 	return defaultSDK.Load().DefaultOrLatest()
