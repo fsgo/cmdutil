@@ -1,10 +1,10 @@
 module github.com/fsgo/cmdutil
 
-go 1.19
+go 1.20
 
 require (
-	github.com/stretchr/testify v1.8.2
-	golang.org/x/mod v0.10.0
+	github.com/stretchr/testify v1.8.4
+	golang.org/x/mod v0.12.0
 )
 
 require (

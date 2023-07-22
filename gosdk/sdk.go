@@ -22,7 +22,7 @@ import (
 
 // SDK 查找当前机器的 Go SDK 情况
 type SDK struct {
-	inPathGo string
+	inPathGo string // "go" 二进制程序的文件路径
 	list     []string
 	listEnv  []*goEnv
 	once     sync.Once
@@ -162,7 +162,7 @@ func DefaultOrLatest() string {
 	return defaultSDK.Load().DefaultOrLatest()
 }
 
-// LatestOrDefault 返回最新版本，或者是 $PATH 里的 go 版本
+// LatestOrDefault 返回最新版本，或者是 $PATH 里的 go 版本,
 // 若没有，也会返回 "go"
 func LatestOrDefault() string {
 	return defaultSDK.Load().LatestOrDefault()
@@ -173,7 +173,7 @@ func Latest() string {
 	return defaultSDK.Load().Latest()
 }
 
-// Default 返回 $PATH 里的 Go 的路径
+// Default 返回 $PATH 里的 "go" 二进制文件的路径，若不存在，会返回空
 func Default() string {
 	return defaultSDK.Load().Default()
 }
