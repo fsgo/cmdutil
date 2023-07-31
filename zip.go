@@ -59,7 +59,7 @@ func (zp *Zip) Unpack(archiveFile string, targetDir string) error {
 // UnpackFromReader 解压 zip.Reader
 func (zp *Zip) UnpackFromReader(zrd *zip.Reader, targetDir string) error {
 	for _, f := range zrd.File {
-		if !zp.checkMinMaxIgnore(f) {
+		if zp.checkMinMaxIgnore(f) {
 			continue
 		}
 		if zp.UnpackNextBefore != nil {
@@ -85,7 +85,7 @@ func (zp *Zip) UnpackFromReader(zrd *zip.Reader, targetDir string) error {
 
 func (zp *Zip) checkMinMaxIgnore(f *zip.File) bool {
 	if !f.FileInfo().Mode().IsRegular() {
-		return false
+		return true
 	}
 	size := f.FileInfo().Size()
 	if zp.MinSize > 0 && size < zp.MinSize {
