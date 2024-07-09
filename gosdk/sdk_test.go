@@ -8,40 +8,40 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/fsgo/fst"
 )
 
 func TestDefaultOrLatest(t *testing.T) {
 	got := DefaultOrLatest()
-	require.NotEmpty(t, got)
+	fst.NotEmpty(t, got)
 }
 
 func TestLatest(t *testing.T) {
 	got := Latest()
-	require.NotEmpty(t, got)
+	fst.NotEmpty(t, got)
 }
 
 func TestDefault(t *testing.T) {
 	got := Default()
-	require.NotEmpty(t, got)
+	fst.NotEmpty(t, got)
 }
 
 func TestLatestOrDefault(t *testing.T) {
 	got := LatestOrDefault()
-	require.NotEmpty(t, got)
+	fst.NotEmpty(t, got)
 }
 
 func TestList(t *testing.T) {
 	got := List()
-	require.NotEmpty(t, got)
+	fst.NotEmpty(t, got)
 }
 
 func TestGoCmdEnv(t *testing.T) {
 	l := LatestOrDefault()
 	var env []string
 	got := GoCmdEnv(l, env)
-	require.NotEmpty(t, got)
+	fst.NotEmpty(t, got)
 	str := strings.Join(got, ";")
-	require.Contains(t, str, "GOROOT")
-	require.Contains(t, str, "PATH")
+	fst.StringContains(t, str, "GOROOT")
+	fst.StringContains(t, str, "PATH")
 }

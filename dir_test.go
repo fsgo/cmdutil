@@ -9,13 +9,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/fsgo/fst"
 )
 
 func checkDir(t *testing.T, want string) {
 	wd, err := os.Getwd()
-	require.NoError(t, err)
-	require.Contains(t, filepath.Base(wd), want)
+	fst.NoError(t, err)
+	fst.StringContains(t, filepath.Base(wd), want)
 }
 
 func TestDirPushd_MustPushd(t *testing.T) {
@@ -45,7 +45,7 @@ func TestMustChdir(t *testing.T) {
 	t.Run("dir not exists", func(t *testing.T) {
 		defer func() {
 			re := recover()
-			require.NotNil(t, re)
+			fst.NotNil(t, re)
 		}()
 		MustChdir("not_found")
 	})
