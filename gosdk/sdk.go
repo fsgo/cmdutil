@@ -22,7 +22,8 @@ import (
 
 // SDK 查找当前机器的 Go SDK 情况
 type SDK struct {
-	inPathGo string // "go" 二进制程序的文件路径
+	ExtDirs  []string // 除了 ~/sdk/ 其他的 go sdk 根目录，可选
+	inPathGo string   // "go" 二进制程序的文件路径
 	list     []string
 	listEnv  []*goEnv
 	once     sync.Once
@@ -36,6 +37,19 @@ func (gs *SDK) List() []string {
 	return gs.list
 }
 
+// Find 查找指定号的 go 命令的地址,若查找不到会返回空字符串
+//
+// version: go 版本号，如 1.21
+func (gs *SDK) Find(version string) string {
+	gs.doOnce()
+	for _, e := range gs.listEnv {
+		if strings.HasPrefix(e.version, version) {
+			return e.binPath
+		}
+	}
+	return ""
+}
+
 func (gs *SDK) doOnce() {
 	gs.once.Do(gs.findList)
 }
@@ -46,9 +60,9 @@ func (gs *SDK) findList() {
 		gs.inPathGo = e.binPath
 		all[e.binPath] = e
 	}
-	home, err := os.UserHomeDir()
-	if err == nil {
-		ms, _ := filepath.Glob(filepath.Join(home, "sdk", "go1.*"))
+
+	scanSDKDir := func(dir string) {
+		ms, _ := filepath.Glob(filepath.Join(dir, "go1.*"))
 		for i := 0; i < len(ms); i++ {
 			gb := filepath.Join(ms[i], "bin", "go")
 			if e := gs.findGo(gb); e != nil {
@@ -56,12 +70,21 @@ func (gs *SDK) findList() {
 			}
 		}
 	}
+	home, err := os.UserHomeDir()
+	if err == nil {
+		scanSDKDir(filepath.Join(home, "sdk"))
+	}
+
+	for _, dir := range gs.ExtDirs {
+		scanSDKDir(dir)
+	}
+
 	listEnv := make([]*goEnv, 0, len(all))
 	for _, e := range all {
 		listEnv = append(listEnv, e)
 	}
 	sort.SliceStable(listEnv, func(i, j int) bool {
-		return listEnv[i].Greater(listEnv[j])
+		return listEnv[i].greater(listEnv[j])
 	})
 	gs.listEnv = listEnv
 
@@ -77,7 +100,7 @@ func (gs *SDK) findGo(binPath string) *goEnv {
 	if err != nil {
 		return nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bp, "version")
 	out, err := cmd.Output()
@@ -135,11 +158,11 @@ func (gs *SDK) Latest() string {
 }
 
 type goEnv struct {
-	binPath string
-	version string
+	binPath string // 完整的 go 命令的路径
+	version string // 版本号，如 1.21，1.22.1
 }
 
-func (gs *goEnv) Greater(b *goEnv) bool {
+func (gs *goEnv) greater(b *goEnv) bool {
 	av := "v" + gs.version[2:]
 	bv := "v" + b.version[2:]
 	return semver.Compare(av, bv) >= 0
