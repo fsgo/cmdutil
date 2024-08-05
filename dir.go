@@ -51,6 +51,7 @@ func (c *Chdir) MustGoBack() {
 	panic(err)
 }
 
+// DirPushd 类似 pushd、popd 命令的目录切换功能
 type DirPushd struct {
 	list []*Chdir
 }
@@ -62,6 +63,7 @@ func (dp *DirPushd) MustPushd(dir string) {
 	}
 }
 
+// Pushd 进入一个目录，并将当前目录入栈
 func (dp *DirPushd) Pushd(dir string) error {
 	c, err := NewChdir(dir)
 	if err != nil {
@@ -78,6 +80,7 @@ func (dp *DirPushd) MustPopd() {
 	}
 }
 
+// Popd 返回前一个目录，若目录栈为空则直接返回 nil
 func (dp *DirPushd) Popd() error {
 	if len(dp.list) == 0 {
 		return nil

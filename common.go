@@ -6,6 +6,7 @@ package cmdutil
 
 import (
 	"os"
+	"runtime"
 )
 
 func mkdir(dir string) error {
@@ -16,13 +17,13 @@ func mkdir(dir string) error {
 	return err
 }
 
-// func isWindows() bool {
-// 	return runtime.GOOS == "windows"
-// }
-//
-// func exe() string {
-// 	if isWindows() {
-// 		return ".exe"
-// 	}
-// 	return ""
-// }
+func isWindows() bool {
+	return runtime.GOOS == "windows"
+}
+
+func Exe() string {
+	if isWindows() {
+		return ".exe"
+	}
+	return ""
+}

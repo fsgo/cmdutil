@@ -40,8 +40,13 @@ func (gs *SDK) List() []string {
 // Find 查找指定号的 go 命令的地址,若查找不到会返回空字符串
 //
 // version: go 版本号，如 1.21
+//
+// 返回如 /home/work/sdk/go1.21.12/bin/go
 func (gs *SDK) Find(version string) string {
 	gs.doOnce()
+	if !strings.HasPrefix(version, "go") {
+		version = "go" + version
+	}
 	for _, e := range gs.listEnv {
 		if strings.HasPrefix(e.version, version) {
 			return e.binPath
@@ -132,7 +137,7 @@ func (gs *SDK) DefaultOrLatest() string {
 	return "go"
 }
 
-// LatestOrDefault 返回最新版本，或者是 $PATH 里的 go 版本
+// LatestOrDefault 返回最新版本 "go" 二进制文件的路径，或者是 $PATH 里的 go 版本
 // 若没有，也会返回 "go"
 func (gs *SDK) LatestOrDefault() string {
 	l := gs.Latest()
