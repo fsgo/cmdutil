@@ -22,16 +22,19 @@ import (
 
 // Wget 提供类似 wget 的功能
 type Wget struct {
+	// LogWriter 用于日志输出，可选
 	LogWriter io.Writer
 
+	// Proxy 代理配置，可选，当为 nil 时会使用 http.ProxyFromEnvironment
 	Proxy func(*http.Request) (*url.URL, error)
 
 	// Timeout 整体超时
 	Timeout time.Duration
 
-	// ConnectTimeout 连接超时
+	// ConnectTimeout 连接超时，可选
 	ConnectTimeout time.Duration
 
+	// InsecureSkipVerify 是否跳过 tls 证书校验，可选
 	InsecureSkipVerify bool
 }
 

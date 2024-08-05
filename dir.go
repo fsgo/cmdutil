@@ -8,6 +8,7 @@ import (
 	"os"
 )
 
+// MustChdir 进入指定目录，若失败会 panic
 func MustChdir(to string) *Chdir {
 	c, err := NewChdir(to)
 	if err == nil {
@@ -16,6 +17,7 @@ func MustChdir(to string) *Chdir {
 	panic(err)
 }
 
+// NewChdir 进入指定目录
 func NewChdir(to string) (*Chdir, error) {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -30,14 +32,17 @@ func NewChdir(to string) (*Chdir, error) {
 	}, nil
 }
 
+// Chdir 支持回退到之前目录的当前目录切换功能
 type Chdir struct {
 	last string
 }
 
+// GoBack 回到初始目录
 func (c *Chdir) GoBack() error {
 	return os.Chdir(c.last)
 }
 
+// MustGoBack 回到初始目录，若失败会 panic
 func (c *Chdir) MustGoBack() {
 	err := c.GoBack()
 	if err == nil {

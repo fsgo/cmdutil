@@ -16,6 +16,7 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
+// MustAutoDisableGoWork AutoDisableGoWork 的快捷调用,若失败会 panic
 func MustAutoDisableGoWork() {
 	err := AutoDisableGoWork()
 	if err != nil {
@@ -23,6 +24,7 @@ func MustAutoDisableGoWork() {
 	}
 }
 
+// TryAutoDisableGoWork AutoDisableGoWork 的快捷调用，若失败，会打印日志
 func TryAutoDisableGoWork() {
 	err := AutoDisableGoWork()
 	if err != nil {
@@ -30,6 +32,9 @@ func TryAutoDisableGoWork() {
 	}
 }
 
+// AutoDisableGoWork 自动禁用 go work 功能
+//
+// 若当前项目未在 go.work 文件中定义，则设置环境变量 GOWORK = off
 func AutoDisableGoWork() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -40,7 +45,7 @@ func AutoDisableGoWork() error {
 		return err0
 	}
 	fp := strings.TrimSpace(string(out))
-	if fp == "off" {
+	if fp == "off" || fp == "" {
 		return nil
 	}
 	bf, err1 := os.ReadFile(fp)

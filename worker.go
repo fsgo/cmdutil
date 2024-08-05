@@ -6,26 +6,21 @@ package cmdutil
 
 import (
 	"sync"
-	"sync/atomic"
 )
 
 type WorkerGroup struct {
-	// Max 最大并发度，默认为 1
+	// Max 最大并发度，可选，默认为 1
 	Max int
 
-	once    atomic.Bool
+	once    sync.Once
 	limiter chan struct{}
 	wait    sync.WaitGroup
 }
 
 func (wg *WorkerGroup) init() {
-	if wg.once.CompareAndSwap(false, true) {
-		var m = wg.Max
-		if m <= 0 {
-			m = 1
-		}
-		wg.limiter = make(chan struct{}, m)
-	}
+	wg.once.Do(func() {
+		wg.limiter = make(chan struct{}, max(wg.Max, 1))
+	})
 }
 
 func (wg *WorkerGroup) Run(fn func()) {

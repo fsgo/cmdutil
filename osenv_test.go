@@ -6,29 +6,38 @@ package cmdutil
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/fsgo/fst"
 )
 
 func TestOSEnv1(t *testing.T) {
-	t.Setenv("PATH", "hello1:world1")
-	de := &OSEnv{}
-	key1 := "PATH"
-	path := os.Getenv(key1)
+	const (
+		key1 = "PATH"
+		key2 = "PATH2022"
+		sp   = string(filepath.ListSeparator)
+	)
+	t.Setenv(key1, "hello1"+sp+"world1")
+	t.Setenv(key2, "")
 
-	key2 := "PATH2022"
-	path2022 := os.Getenv(key2)
-	fst.Empty(t, path2022)
+	path := os.Getenv(key1)
+	fst.Equal(t, "hello1"+sp+"world1", path)
+
+	fst.Empty(t, os.Getenv(key2))
+
+	de := &OSEnv{}
+	fst.Equal(t, []string{"hello1", "world1"}, de.GetValues(key1))
+	fst.Equal(t, path, de.Get(key1))
 
 	fst.NoError(t, de.Insert(key1, "abc"))
-	fst.Equal(t, "abc:"+path, de.Get(key1))
+	fst.Equal(t, "abc"+sp+path, de.Get(key1))
 
 	fst.NoError(t, de.Insert(key1, "hello"))
-	fst.Equal(t, "hello:abc:"+path, de.Get(key1))
+	fst.Equal(t, "hello"+sp+"abc"+sp+path, de.Get(key1))
 
 	fst.NoError(t, de.Append(key1, "world"))
-	fst.Equal(t, "hello:abc:"+path+":world", de.Get(key1))
+	fst.Equal(t, "hello"+sp+"abc"+sp+path+sp+"world", de.Get(key1))
 
 	fst.NoError(t, de.Set(key1, "world"))
 	fst.Equal(t, "world", de.Get(key1))
@@ -57,6 +66,13 @@ func TestOSEnv1(t *testing.T) {
 	fst.Error(t, de.Set("", "abc"))
 	fst.Error(t, de.Delete(""))
 	fst.Empty(t, de.Get(""))
+
+	fst.NoError(t, de.Set(key1, path))
+	fst.NoError(t, de.DeleteValue(key1, "hello1"))
+	fst.Equal(t, "world1", de.Get(key1))
+
+	fst.NoError(t, de.DeleteValue(key1, "not-found"))
+	fst.Equal(t, "world1", de.Get(key1))
 }
 
 func TestOSEnv2(t *testing.T) {
@@ -107,8 +123,9 @@ func TestOSEnv3(t *testing.T) {
 }
 
 func TestOSEnv_unique(t *testing.T) {
+	const sp = string(filepath.ListSeparator)
 	oe := &OSEnv{}
 	fst.Equal(t, "abc", oe.unique("abc"))
-	fst.Equal(t, "abc:def", oe.unique("abc:def:abc"))
-	fst.Equal(t, "abc:def", oe.unique("abc:def:abc ::"))
+	fst.Equal(t, "abc"+sp+"def", oe.unique("abc"+sp+"def"+sp+"abc"))
+	fst.Equal(t, "abc"+sp+"def", oe.unique("abc"+sp+"def"+sp+"abc "+sp+sp))
 }
