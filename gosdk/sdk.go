@@ -6,6 +6,8 @@ package gosdk
 
 import (
 	"context"
+	"debug/buildinfo"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,7 +15,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"golang.org/x/mod/semver"
 
@@ -22,18 +23,19 @@ import (
 
 // SDK 查找当前机器的 Go SDK 情况
 type SDK struct {
-	ExtDirs  []string // 除了 ~/sdk/ 其他的 go sdk 根目录，可选
-	inPathGo string   // "go" 二进制程序的文件路径
-	list     []string
-	listEnv  []*goEnv
-	once     sync.Once
+	ExtDirs    []string // 除了 ~/sdk/ 其他的 go sdk 根目录，可选
+	inPathGo   string   // "go" 二进制程序的文件路径
+	list       []string
+	listEnv    []*goEnv
+	once       sync.Once
+	goEnvCache sync.Map
 }
 
 // List 返回当前机器所有安装的，可用的 'go' 的地址
 // 版本由高到低排序
 // 若没有，会返回空
-func (gs *SDK) List() []string {
-	gs.doOnce()
+func (gs *SDK) List(ctx context.Context) []string {
+	gs.doOnce(ctx)
 	return gs.list
 }
 
@@ -42,8 +44,8 @@ func (gs *SDK) List() []string {
 // version: go 版本号，如 1.21
 //
 // 返回如 /home/work/sdk/go1.21.12/bin/go
-func (gs *SDK) Find(version string) string {
-	gs.doOnce()
+func (gs *SDK) Find(ctx context.Context, version string) string {
+	gs.doOnce(ctx)
 	if !strings.HasPrefix(version, "go") {
 		version = "go" + version
 	}
@@ -55,13 +57,15 @@ func (gs *SDK) Find(version string) string {
 	return ""
 }
 
-func (gs *SDK) doOnce() {
-	gs.once.Do(gs.findList)
+func (gs *SDK) doOnce(ctx context.Context) {
+	gs.once.Do(func() {
+		gs.findList(ctx)
+	})
 }
 
-func (gs *SDK) findList() {
+func (gs *SDK) findList(ctx context.Context) {
 	all := make(map[string]*goEnv)
-	if e := gs.findGo("go"); e != nil {
+	if e := gs.findGo(ctx, "go"); e != nil {
 		gs.inPathGo = e.binPath
 		all[e.binPath] = e
 	}
@@ -70,7 +74,7 @@ func (gs *SDK) findList() {
 		ms, _ := filepath.Glob(filepath.Join(dir, "go1.*"))
 		for i := 0; i < len(ms); i++ {
 			gb := filepath.Join(ms[i], "bin", "go")
-			if e := gs.findGo(gb); e != nil {
+			if e := gs.findGo(ctx, gb); e != nil {
 				all[e.binPath] = e
 			}
 		}
@@ -100,34 +104,44 @@ func (gs *SDK) findList() {
 	gs.list = list
 }
 
-func (gs *SDK) findGo(binPath string) *goEnv {
+func (gs *SDK) findGo(ctx context.Context, binPath string) *goEnv {
+	getLogger().Println("SDK.findGo, binPath=", binPath)
+	binPath = filepath.Clean(binPath)
+
+	value, ok := gs.goEnvCache.Load(binPath)
+	if ok {
+		if result, ok1 := value.(*goEnv); ok1 {
+			return result
+		}
+		return nil
+	}
 	bp, err := exec.LookPath(binPath)
 	if err != nil {
 		return nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, bp, "version")
-	out, err := cmd.Output()
+
+	bi, err := buildinfo.ReadFile(bp)
 	if err != nil {
 		return nil
 	}
-	str := string(out)
-	if !strings.HasPrefix(str, "go version go") {
+	bf, _ := json.Marshal(bi)
+	getLogger().Printf("SDK.findGo, bp=%q buildInfo=%#v, err=%v\n", bp, bf, err)
+	if bi.Path != "cmd/go" {
 		return nil
 	}
-	fields := strings.Fields(str)
-	version := fields[2]
-	return &goEnv{
+
+	result := &goEnv{
 		binPath: bp,
-		version: version,
+		version: bi.GoVersion,
 	}
+	gs.goEnvCache.Store(binPath, result)
+	return result
 }
 
 // DefaultOrLatest 查找 $PATH 里的 go 或者是最高版本的 go
 // 若没有，也会返回 "go"
-func (gs *SDK) DefaultOrLatest() string {
-	gs.doOnce()
+func (gs *SDK) DefaultOrLatest(ctx context.Context) string {
+	gs.doOnce(ctx)
 	if len(gs.inPathGo) != 0 {
 		return gs.inPathGo
 	}
@@ -139,23 +153,23 @@ func (gs *SDK) DefaultOrLatest() string {
 
 // LatestOrDefault 返回最新版本 "go" 二进制文件的路径，或者是 $PATH 里的 go 版本
 // 若没有，也会返回 "go"
-func (gs *SDK) LatestOrDefault() string {
-	l := gs.Latest()
+func (gs *SDK) LatestOrDefault(ctx context.Context) string {
+	l := gs.Latest(ctx)
 	if len(l) != 0 {
 		return l
 	}
-	return gs.Default()
+	return gs.Default(ctx)
 }
 
 // Default 返回 $PATH 里的 "go" 二进制文件的路径，若不存在，会返回空
-func (gs *SDK) Default() string {
-	gs.doOnce()
+func (gs *SDK) Default(ctx context.Context) string {
+	gs.doOnce(ctx)
 	return gs.inPathGo
 }
 
 // Latest 返回最新版本的 "go" 的路径，若不存在，会返回空
-func (gs *SDK) Latest() string {
-	gs.doOnce()
+func (gs *SDK) Latest(ctx context.Context) string {
+	gs.doOnce(ctx)
 	if len(gs.listEnv) >= 0 {
 		return gs.listEnv[0].binPath
 	}
@@ -186,31 +200,31 @@ func Update() {
 
 // DefaultOrLatest 查找 $PATH 里的 "go" 二进制文件的路径 或者是最高版本的 go
 // 若没有，也会返回 "go"
-func DefaultOrLatest() string {
-	return defaultSDK.Load().DefaultOrLatest()
+func DefaultOrLatest(ctx context.Context) string {
+	return defaultSDK.Load().DefaultOrLatest(ctx)
 }
 
 // LatestOrDefault 返回最新版本，或者是 $PATH 里的 go 版本,
 // 若没有，也会返回 "go"
-func LatestOrDefault() string {
-	return defaultSDK.Load().LatestOrDefault()
+func LatestOrDefault(ctx context.Context) string {
+	return defaultSDK.Load().LatestOrDefault(ctx)
 }
 
 // Latest 返回最新版本的 Go 的路径，若不存在，会返回空
-func Latest() string {
-	return defaultSDK.Load().Latest()
+func Latest(ctx context.Context) string {
+	return defaultSDK.Load().Latest(ctx)
 }
 
 // Default 返回 $PATH 里的 "go" 二进制文件的路径，若不存在，会返回空
-func Default() string {
-	return defaultSDK.Load().Default()
+func Default(ctx context.Context) string {
+	return defaultSDK.Load().Default(ctx)
 }
 
 // List 返回当前机器所有安装的，可用的 'go' 的地址
 // 版本由高到低排序
 // 若没有，会返回空
-func List() []string {
-	return defaultSDK.Load().List()
+func List(ctx context.Context) []string {
+	return defaultSDK.Load().List(ctx)
 }
 
 // GoCmdEnv 根据 goBin 路径返回设置了 GOROOT 的环境变量

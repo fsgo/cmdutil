@@ -5,6 +5,7 @@
 package gosdk
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -16,9 +17,9 @@ import (
 // RunGo 执行 go 命令
 //
 // root: Go SDK 的目录，如 ~/sdk/go1.22.5/
-func RunGo(root string) {
+func RunGo(ctx context.Context, root string) {
 	goBin := filepath.Join(root, "bin", "go"+cmdutil.Exe())
-	cmd := exec.Command(goBin, os.Args[1:]...)
+	cmd := exec.CommandContext(ctx, goBin, os.Args[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

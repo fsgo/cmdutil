@@ -15,7 +15,7 @@ import (
 func checkDir(t *testing.T, want string) {
 	wd, err := os.Getwd()
 	fst.NoError(t, err)
-	fst.StringContains(t, filepath.Base(wd), want)
+	fst.Contains(t, filepath.Base(wd), want)
 }
 
 func TestDirPushd_MustPushd(t *testing.T) {

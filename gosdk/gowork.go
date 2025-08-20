@@ -38,7 +38,7 @@ func TryAutoDisableGoWork() {
 func AutoDisableGoWork() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, DefaultOrLatest(), "env", "GOWORK")
+	cmd := exec.CommandContext(ctx, DefaultOrLatest(ctx), "env", "GOWORK")
 	cmd.Stdin = os.Stdin
 	out, err0 := cmd.Output()
 	if err0 != nil {

@@ -12,36 +12,36 @@ import (
 )
 
 func TestDefaultOrLatest(t *testing.T) {
-	got := DefaultOrLatest()
+	got := DefaultOrLatest(t.Context())
 	fst.NotEmpty(t, got)
 }
 
 func TestLatest(t *testing.T) {
-	got := Latest()
+	got := Latest(t.Context())
 	fst.NotEmpty(t, got)
 }
 
 func TestDefault(t *testing.T) {
-	got := Default()
+	got := Default(t.Context())
 	fst.NotEmpty(t, got)
 }
 
 func TestLatestOrDefault(t *testing.T) {
-	got := LatestOrDefault()
+	got := LatestOrDefault(t.Context())
 	fst.NotEmpty(t, got)
 }
 
 func TestList(t *testing.T) {
-	got := List()
+	got := List(t.Context())
 	fst.NotEmpty(t, got)
 }
 
 func TestGoCmdEnv(t *testing.T) {
-	l := LatestOrDefault()
+	l := LatestOrDefault(t.Context())
 	var env []string
 	got := GoCmdEnv(l, env)
 	fst.NotEmpty(t, got)
 	str := strings.Join(got, ";")
-	fst.StringContains(t, str, "GOROOT")
-	fst.StringContains(t, str, "PATH")
+	fst.Contains(t, str, "GOROOT")
+	fst.Contains(t, str, "PATH")
 }
