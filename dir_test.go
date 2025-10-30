@@ -9,13 +9,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/fsgo/fst"
+	"github.com/xanygo/anygo/xt"
 )
 
 func checkDir(t *testing.T, want string) {
 	wd, err := os.Getwd()
-	fst.NoError(t, err)
-	fst.Contains(t, filepath.Base(wd), want)
+	xt.NoError(t, err)
+	xt.Contains(t, filepath.Base(wd), want)
 }
 
 func TestDirPushd_MustPushd(t *testing.T) {
@@ -45,7 +45,7 @@ func TestMustChdir(t *testing.T) {
 	t.Run("dir not exists", func(t *testing.T) {
 		defer func() {
 			re := recover()
-			fst.NotNil(t, re)
+			xt.NotNil(t, re)
 		}()
 		MustChdir("not_found")
 	})

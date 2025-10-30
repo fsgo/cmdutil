@@ -170,7 +170,7 @@ func (gs *SDK) Default(ctx context.Context) string {
 // Latest 返回最新版本的 "go" 的路径，若不存在，会返回空
 func (gs *SDK) Latest(ctx context.Context) string {
 	gs.doOnce(ctx)
-	if len(gs.listEnv) >= 0 {
+	if len(gs.listEnv) > 0 {
 		return gs.listEnv[0].binPath
 	}
 	return ""
